@@ -8,6 +8,7 @@ import (
 	"github.com/VictorNine/bitwarden-go/internal/api"
 	"github.com/VictorNine/bitwarden-go/internal/auth"
 	"github.com/VictorNine/bitwarden-go/internal/common"
+	"github.com/VictorNine/bitwarden-go/internal/cors"
 	"github.com/VictorNine/bitwarden-go/internal/database/sqlite"
 )
 
@@ -55,36 +56,37 @@ func main() {
 
 	authHandler := auth.New(db, cfg.signingKey, cfg.jwtExpire)
 	apiHandler := api.New(db)
+	corsMW := cors.New()
 
 	mux := http.NewServeMux()
 
 	if cfg.disableRegistration == false {
-		mux.HandleFunc("/api/accounts/register", authHandler.HandleRegister)
+		mux.Handle("/api/accounts/register", corsMW.MiddleWare(http.HandlerFunc(authHandler.HandleRegister)))
 	}
-	mux.HandleFunc("/identity/connect/token", authHandler.HandleLogin)
-	mux.HandleFunc("/api/accounts/prelogin", authHandler.HandlePrelogin)
+	mux.Handle("/identity/connect/token", corsMW.MiddleWare(http.HandlerFunc(authHandler.HandleLogin)))
+	mux.Handle("/api/accounts/prelogin", corsMW.MiddleWare(http.HandlerFunc(authHandler.HandlePrelogin)))
 
-	mux.Handle("/api/accounts/keys", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleKeysUpdate)))
-	mux.Handle("/api/accounts/profile", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleProfile)))
-	mux.Handle("/api/collections", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleCollections)))
-	mux.Handle("/api/folders", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleFolder)))
-	mux.Handle("/api/folders/", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleFolderUpdate)))
-	mux.Handle("/apifolders", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleFolder))) // The android app want's the address like this, will be fixed in the next version. Issue #174
-	mux.Handle("/api/sync", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleSync)))
+	mux.Handle("/api/accounts/keys", corsMW.MiddleWare(authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleKeysUpdate))))
+	mux.Handle("/api/accounts/profile", corsMW.MiddleWare(authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleProfile))))
+	mux.Handle("/api/collections", corsMW.MiddleWare(authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleCollections))))
+	mux.Handle("/api/folders", corsMW.MiddleWare(authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleFolder))))
+	mux.Handle("/api/folders/", corsMW.MiddleWare(authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleFolderUpdate))))
+	mux.Handle("/apifolders", corsMW.MiddleWare(authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleFolder)))) // The android app want's the address like this, will be fixed in the next version. Issue #174
+	mux.Handle("/api/sync", corsMW.MiddleWare(authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleSync))))
 
-	mux.Handle("/api/ciphers/import", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleImport)))
-	mux.Handle("/api/ciphers", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleCipher)))
-	mux.Handle("/api/ciphers/", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleCipherUpdate)))
+	mux.Handle("/api/ciphers/import", corsMW.MiddleWare(authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleImport))))
+	mux.Handle("/api/ciphers", corsMW.MiddleWare(authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleCipher))))
+	mux.Handle("/api/ciphers/", corsMW.MiddleWare(authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleCipherUpdate))))
 
 	if len(cfg.vaultURL) > 4 {
 		proxy := common.Proxy{VaultURL: cfg.vaultURL}
 		mux.Handle("/", http.HandlerFunc(proxy.Handler))
 	}
 
-	mux.Handle("/api/two-factor/get-authenticator", authHandler.JwtMiddleware(http.HandlerFunc(authHandler.GetAuthenticator)))
-	mux.Handle("/api/two-factor/authenticator", authHandler.JwtMiddleware(http.HandlerFunc(authHandler.VerifyAuthenticatorSecret)))
-	mux.Handle("/api/two-factor/disable", authHandler.JwtMiddleware(http.HandlerFunc(authHandler.HandleDisableTwoFactor)))
-	mux.Handle("/api/two-factor", authHandler.JwtMiddleware(http.HandlerFunc(authHandler.HandleTwoFactor)))
+	mux.Handle("/api/two-factor/get-authenticator", corsMW.MiddleWare(authHandler.JwtMiddleware(http.HandlerFunc(authHandler.GetAuthenticator))))
+	mux.Handle("/api/two-factor/authenticator", corsMW.MiddleWare(authHandler.JwtMiddleware(http.HandlerFunc(authHandler.VerifyAuthenticatorSecret))))
+	mux.Handle("/api/two-factor/disable", corsMW.MiddleWare(authHandler.JwtMiddleware(http.HandlerFunc(authHandler.HandleDisableTwoFactor))))
+	mux.Handle("/api/two-factor", corsMW.MiddleWare(authHandler.JwtMiddleware(http.HandlerFunc(authHandler.HandleTwoFactor))))
 
 	log.Println("Starting server on " + cfg.hostAddr + ":" + cfg.hostPort)
 	log.Fatal(http.ListenAndServe(cfg.hostAddr+":"+cfg.hostPort, mux))
