@@ -221,18 +221,7 @@ func (h *APIHandler) HandleSync(w http.ResponseWriter, req *http.Request) {
 
 	acc, err := h.db.GetAccount(email, "")
 
-	prof := bw.Profile{
-		Id:               acc.Id,
-		Email:            acc.Email,
-		EmailVerified:    false,
-		Premium:          false,
-		Culture:          "en-US",
-		TwoFactorEnabled: false,
-		Key:              acc.Key,
-		SecurityStamp:    nil,
-		Organizations:    nil,
-		Object:           "profile",
-	}
+	prof := acc.GetProfile()
 
 	ciphs, err := h.db.GetCiphers(acc.Id)
 	if err != nil {

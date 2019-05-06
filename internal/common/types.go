@@ -25,9 +25,10 @@ type Account struct {
 }
 
 func (acc Account) GetProfile() Profile {
+	name := acc.Name
 	p := Profile{
 		Id:                 acc.Id,
-		Name:               nil,
+		Name:               &name,
 		Email:              acc.Email,
 		EmailVerified:      false,
 		Premium:            false,

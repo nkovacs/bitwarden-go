@@ -160,7 +160,7 @@ type resToken struct {
 // PrivateKey is needed by the web vault. But android will crash if it's included
 type resTokenWPK struct {
 	resToken
-	PrivateKey string `json:"PrivateKey"`
+	PrivateKey *string `json:"PrivateKey"`
 }
 
 func (auth *Auth) HandleLogin(w http.ResponseWriter, req *http.Request) {
@@ -262,7 +262,10 @@ func (auth *Auth) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	var data []byte
 	// Login from web vault add priv key
 	if clientID == "web" {
-		rtokenWPK := resTokenWPK{resToken: rtoken, PrivateKey: acc.KeyPair.EncryptedPrivateKey}
+		rtokenWPK := resTokenWPK{resToken: rtoken}
+		if acc.KeyPair.EncryptedPrivateKey != "" {
+			rtokenWPK.PrivateKey = &acc.KeyPair.EncryptedPrivateKey
+		}
 		data, err = json.Marshal(&rtokenWPK)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
