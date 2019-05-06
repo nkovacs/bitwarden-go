@@ -248,7 +248,7 @@ func (auth *Auth) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	claims["sub"] = "NA"
 	claims["email"] = acc.Email
 	claims["name"] = acc.Name
-	claims["premium"] = false
+	claims["premium"] = true
 	claims["email_verified"] = false
 	tokenString, _ := token.SignedString(auth.signingKey)
 

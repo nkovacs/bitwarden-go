@@ -31,7 +31,7 @@ func (acc Account) GetProfile() Profile {
 		Name:               &name,
 		Email:              acc.Email,
 		EmailVerified:      false,
-		Premium:            false,
+		Premium:            true,
 		Culture:            "en-US",
 		Key:                acc.Key,
 		SecurityStamp:      nil,
